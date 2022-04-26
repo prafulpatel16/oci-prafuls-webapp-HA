@@ -13,7 +13,7 @@ variable "ssh_public_key2" {}
 
   
 
-
+#Define provider
 provider "oci" {
   tenancy_ocid = var.tenancy_ocid
   user_ocid = var.user_ocid
@@ -22,6 +22,7 @@ provider "oci" {
   region = var.region
 }
 
+#Region mapping
 variable "ad_region_mapping" {
   type = map(string)
 
@@ -169,7 +170,7 @@ resource "oci_core_instance" "webserver02" {
     hostname_label   = "webserver02"
   }
 
-  source_details {
+  source_details {  
     source_type = "image"
     source_id   = var.images[var.region]
   }
@@ -186,7 +187,7 @@ variable "user-data-web01" {
   default = <<EOF
 #!/bin/bash -x
 
-# Purpose: Install apache webserver and copy praful's portfolio web application from github to apache webserver
+# Purpose: Install apache webserver, Copy Praful's portfolio web application source code from github to apache webserver root
 # Author: Praful Patel
 # Date & Time: Apr 24, 2022 
 # ------------------------------------------
