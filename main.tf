@@ -10,6 +10,9 @@ variable "fingerprint" {}
 variable "private_key" {}
 variable "ssh_public_key1" {}
 variable "ssh_public_key2" {}
+variable "instance_shape" {
+  default = "VM.Standard.E2.1.Micro"
+}
 
   
 
@@ -151,7 +154,7 @@ resource "oci_core_instance" "webserver01" {
   availability_domain = data.oci_identity_availability_domain.ad1.name
   compartment_id      = var.compartment_ocid
   display_name        = "webserver01"
-  shape               = "VM.Standard.E2.1.Micro"
+  shape               = var.instance_shape
 
 
   create_vnic_details {
@@ -178,7 +181,7 @@ resource "oci_core_instance" "webserver02" {
   availability_domain = data.oci_identity_availability_domain.ad2.name
   compartment_id      = var.compartment_ocid
   display_name        = "webserver02"
-  shape               = "VM.Standard.A1.Flex"
+  shape               = var.instance_shape
   
   create_vnic_details {
     subnet_id        = oci_core_subnet.prp_subnet_two.id
