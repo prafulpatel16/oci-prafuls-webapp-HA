@@ -30,8 +30,8 @@ variable "ad_region_mapping" {
   type = map(string)
 
   default = {
-    us-phoenix-1 = 1
-    us-ashburn-1 = 1
+    us-phoenix-1 = 3
+    us-ashburn-1 = 3
     sa-saopaulo-1 = 1
   }
 }
@@ -176,6 +176,24 @@ resource "oci_core_instance" "webserver01" {
   }
 }
 
+resource "oci_core_image" "prp_custom_image" {
+  compartment_id = var.compartment_ocid
+  instance_id    = oci_core_instance.webserver01.id
+
+  launch_mode = "NATIVE"
+
+  timeouts {
+    create = "30m"
+  }
+}
+
+resource "oci_core_shape_management" "compatible_shape" {
+  compartment_id = var.compartment_ocid
+  image_id       = oci_core_image.prp_custom_image.id
+  shape_name     = var.instance_shape
+}
+
+
 #webserver02
 resource "oci_core_instance" "webserver02" {
   availability_domain = data.oci_identity_availability_domain.ad2.name
@@ -191,7 +209,7 @@ resource "oci_core_instance" "webserver02" {
 
   source_details {  
     source_type = "image"
-    source_id   = var.images[var.region]
+    source_id   = oci_core_image.prp_custom_image.id
   }
 
   metadata = {
