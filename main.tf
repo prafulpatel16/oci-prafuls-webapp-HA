@@ -45,6 +45,10 @@ variable "images" {
   }
 }
 
+variable "availability_domain" {
+  default = 3
+}
+
 data "oci_identity_availability_domain" "ad" {
   compartment_id = var.tenancy_ocid
   ad_number      = var.ad_region_mapping[var.region]
@@ -69,6 +73,7 @@ resource "oci_core_virtual_network" "prp_vcn" {
 }
 
 resource "oci_core_subnet" "prp_subnet_one" {
+  availability_domain = data.oci_identity_availability_domain.ad1.name
   cidr_block        = "10.1.20.0/24"
   display_name      = "prpsubnet1"
   dns_label         = "prpsubnet1"
@@ -80,6 +85,7 @@ resource "oci_core_subnet" "prp_subnet_one" {
 }
 
 resource "oci_core_subnet" "prp_subnet_two" {
+  availability_domain = data.oci_identity_availability_domain.ad2.name
   cidr_block        = "10.1.30.0/24"
   display_name      = "prpsubnet2"
   dns_label         = "prpsubnet2"
@@ -287,6 +293,7 @@ resource "oci_load_balancer" "prp-lb" {
 
   subnet_ids = [
     oci_core_subnet.prp_subnet_one.id,
+    oci_core_subnet.prp_subnet_two.id,
     
   ]
 
