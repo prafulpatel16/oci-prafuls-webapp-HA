@@ -10,9 +10,6 @@ variable "fingerprint" {}
 variable "private_key" {}
 variable "ssh_public_key1" {}
 variable "ssh_public_key2" {}
-variable "instance_shape" {
-  default = "VM.Standard.E2.1.Micro"
-}
 
   
 
@@ -30,8 +27,8 @@ variable "ad_region_mapping" {
   type = map(string)
 
   default = {
-    us-phoenix-1 = 3
-    us-ashburn-1 = 3
+    us-phoenix-1 = 1
+    us-ashburn-1 = 1
     sa-saopaulo-1 = 1
   }
 }
@@ -48,25 +45,10 @@ variable "images" {
   }
 }
 
-variable "availability_domain" {
-  default = 3
-}
-
 data "oci_identity_availability_domain" "ad" {
   compartment_id = var.tenancy_ocid
   ad_number      = var.ad_region_mapping[var.region]
 }
-
-data "oci_identity_availability_domain" "ad1" {
-  compartment_id = var.tenancy_ocid // needs to be compartment_ocid if not using root compartment
-  ad_number      = 1
-}
-
-data "oci_identity_availability_domain" "ad2" {
-  compartment_id = var.tenancy_ocid // needs to be compartment_ocid if not using root compartment
-  ad_number      = 2
-}
-
 
 resource "oci_core_virtual_network" "prp_vcn" {
   cidr_block     = "10.1.0.0/16"
@@ -76,7 +58,6 @@ resource "oci_core_virtual_network" "prp_vcn" {
 }
 
 resource "oci_core_subnet" "prp_subnet_one" {
-  availability_domain = data.oci_identity_availability_domain.ad1.name
   cidr_block        = "10.1.20.0/24"
   display_name      = "prpsubnet1"
   dns_label         = "prpsubnet1"
@@ -88,7 +69,6 @@ resource "oci_core_subnet" "prp_subnet_one" {
 }
 
 resource "oci_core_subnet" "prp_subnet_two" {
-  availability_domain = data.oci_identity_availability_domain.ad2.name
   cidr_block        = "10.1.30.0/24"
   display_name      = "prpsubnet2"
   dns_label         = "prpsubnet2"
@@ -151,10 +131,10 @@ resource "oci_core_security_list" "prp_security_list" {
 
 #webserver01
 resource "oci_core_instance" "webserver01" {
-  availability_domain = data.oci_identity_availability_domain.ad1.name
+  availability_domain = data.oci_identity_availability_domain.ad.name
   compartment_id      = var.compartment_ocid
   display_name        = "webserver01"
-  shape               = var.instance_shape
+  shape               = "VM.Standard.E2.1.Micro"
 
 
   create_vnic_details {
@@ -176,32 +156,15 @@ resource "oci_core_instance" "webserver01" {
   }
 }
 
-resource "oci_core_image" "prp_custom_image" {
-  compartment_id = var.compartment_ocid
-  instance_id    = oci_core_instance.webserver01.id
-
-  launch_mode = "NATIVE"
-
-  timeouts {
-    create = "30m"
-  }
-}
-
-resource "oci_core_shape_management" "compatible_shape" {
-  compartment_id = var.compartment_ocid
-  image_id       = oci_core_image.prp_custom_image.id
-  shape_name     = var.instance_shape
-}
-
-
 #webserver02
 resource "oci_core_instance" "webserver02" {
-  availability_domain = data.oci_identity_availability_domain.ad2.name
+  availability_domain = data.oci_identity_availability_domain.ad.name
   compartment_id      = var.compartment_ocid
   display_name        = "webserver02"
-  shape               = "VM.Standard.A1.Flex"
+  shape               = "VM.Standard.E2.1.Micro"
+  
   create_vnic_details {
-    subnet_id        = oci_core_subnet.prp_subnet_two.id
+    subnet_id        = oci_core_subnet.prp_subnet_one.id
     display_name     = "primaryvnic"
     assign_public_ip = true
     hostname_label   = "webserver02"
@@ -209,7 +172,7 @@ resource "oci_core_instance" "webserver02" {
 
   source_details {  
     source_type = "image"
-    source_id   = oci_core_image.prp_custom_image.id
+    source_id   = var.images[var.region]
   }
 
   metadata = {
@@ -313,7 +276,6 @@ resource "oci_load_balancer" "prp-lb" {
 
   subnet_ids = [
     oci_core_subnet.prp_subnet_one.id,
-    oci_core_subnet.prp_subnet_two.id,
     
   ]
 
